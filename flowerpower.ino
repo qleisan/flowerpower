@@ -26,7 +26,7 @@ improvements:
 #include "arduino_secrets.h"
 
 int status = WL_IDLE_STATUS;
-char  buffer[] = "A message from Arduino";
+char  buffer[256];
 
 WiFiUDP Udp;
 unsigned int localPort = 2390;
@@ -51,6 +51,7 @@ void setup() {
 
 void loop() {
     // make measurement
+    int adcReading = analogRead(ADC_BATTERY);
 
     status = WL_IDLE_STATUS;    // best choice?
     while (status != WL_CONNECTED) {
@@ -61,6 +62,7 @@ void loop() {
     blinkLED(2);
     Udp.begin(localPort);
     Udp.beginPacket(remoteIp, 19988);
+    generateJSON(adcReading, buffer);
     Udp.write(buffer);
     Udp.endPacket();
     delay(1000); // some delay seems to be needed
@@ -89,4 +91,9 @@ void blinkLED(int times)
       delay(250);
    
   }
+}
+
+void generateJSON(int battery, char * buffer)
+{
+    sprintf(buffer, "{\"time\":\"00:00\", \"meas\",567, \"batt\":%d}", battery);
 }
