@@ -1,15 +1,17 @@
 /*
 - loop:
     - make measurement
-    - connect wifi in low power mode (compare pwer consumption with normal mode)
+    - connect wifi in low power mode (compare power consumption with normal mode)
     - send UDP with measurement in JSON format
     - shut off WiFi and go to deepSleep()
 
 improvements:
 - removed power LED to minimize power consumnption
 - measure battery voltage (electronics needed? Must ensure no power is consumed in sleep mode)
-- use RTC and send timestamp with data
-- use NTP to set RTC time (at boot and at some regular intervall)
+- add serial output when connected to USB 
+- use RTC and send timestamp with data (check if affected by deepSleep)
+- use NTP to set RTC time (at boot and at some regular intervall). Requires rtc to survive deep sleep... (if not how much does it consume?)
+- there is a "WiFi.getTime()" function!
 - use compile time info (build time)
 - use unique ID (if one exist)
 - check WiFi module version
@@ -22,6 +24,7 @@ improvements:
 #include <WiFiNINA.h>
 #include <WiFiUdp.h>
 #include "ArduinoLowPower.h"
+#include <RTCZero.h>
 
 #include "arduino_secrets.h"
 
@@ -31,7 +34,8 @@ char  buffer[256];
 WiFiUDP Udp;
 unsigned int localPort = 2390;
 IPAddress remoteIp = {192, 168, 0, 23};
-
+RTCZero rtc;
+ unsigned long epoch = 0;
 
 void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
@@ -47,22 +51,29 @@ void setup() {
         }
     }
     blinkLED(1);
+    rtc.begin();
 }
 
 void loop() {
     // make measurement
     int adcReading = analogRead(ADC_BATTERY);
-
+    unsigned long epoch = rtc.getEpoch();
     status = WL_IDLE_STATUS;    // best choice?
     while (status != WL_CONNECTED) {
         status = WiFi.begin(ssid, pass);
         WiFi.lowPowerMode(); // is this ok here or after it has connected?
         delay(5000);
     }
+    if (epoch == 0) {
+        epoch = WiFi.getTime(); //doesn't work
+        // check https://www.arduino.cc/en/Reference/WiFiNINAGetTime
+        // better use NTP example
+        rtc.setEpoch(epoch);
+    }
     blinkLED(2);
     Udp.begin(localPort);
     Udp.beginPacket(remoteIp, 19988);
-    generateJSON(adcReading, buffer);
+    generateJSON(epoch, adcReading, buffer);
     Udp.write(buffer);
     Udp.endPacket();
     delay(1000); // some delay seems to be needed
@@ -93,7 +104,7 @@ void blinkLED(int times)
   }
 }
 
-void generateJSON(int battery, char * buffer)
+void generateJSON(unsigned long int ep, int battery, char * buffer)
 {
-    sprintf(buffer, "{\"time\":\"00:00\", \"meas\",567, \"batt\":%d}", battery);
+    sprintf(buffer, "{\"time\":\"%lu\", \"meas\",567, \"batt\":%d}", ep, battery);
 }
