@@ -7,6 +7,7 @@
 
 improvements:
 - removed power LED to minimize power consumnption
+- add loop counter?
 - measure battery voltage (electronics needed? Must ensure no power is consumed in sleep mode)
 - add serial output when connected to USB 
 - use RTC and send timestamp with data (check if affected by deepSleep)
@@ -36,7 +37,7 @@ WiFiUDP Udp;
 unsigned int localPort = 2390;
 IPAddress remoteIp = {192, 168, 0, 23};
 RTCZero rtc;
- unsigned long epoch = 0;
+unsigned long epoch = 0;
 
 void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
@@ -45,12 +46,13 @@ void setup() {
     if (WiFi.status() == WL_NO_MODULE) {
         while (true)
         {
-        digitalWrite(LED_BUILTIN, HIGH);
-        delay(50);
-        digitalWrite(LED_BUILTIN, LOW);
-        delay(50);
+            digitalWrite(LED_BUILTIN, HIGH);
+            delay(50);
+            digitalWrite(LED_BUILTIN, LOW);
+            delay(50);
         }
     }
+
     blinkLED(1);
     rtc.begin();
 }
@@ -58,22 +60,22 @@ void setup() {
 void loop() {
     // make measurement
     int adcReading = analogRead(ADC_BATTERY);
-    unsigned long epoch = rtc.getEpoch();
+
     status = WL_IDLE_STATUS;    // best choice?
     while (status != WL_CONNECTED) {
         status = WiFi.begin(ssid, pass);
         WiFi.lowPowerMode(); // is this ok here or after it has connected?
         delay(5000);
     }
+    Udp.begin(localPort);
     if (epoch == 0) {
-        epoch = WiFi.getTime(); //doesn't work
-        // check https://www.arduino.cc/en/Reference/WiFiNINAGetTime
-        // better use NTP example
+        epoch = getNTP(Udp);
         rtc.setEpoch(epoch);
     }
     blinkLED(2);
-    Udp.begin(localPort);
+    
     Udp.beginPacket(remoteIp, 19988);
+    epoch = rtc.getEpoch();
     generateJSON(epoch, adcReading, buffer);
     Udp.write(buffer);
     Udp.endPacket();
