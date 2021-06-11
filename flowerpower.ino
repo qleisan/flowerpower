@@ -27,6 +27,7 @@ improvements:
 #include "ArduinoLowPower.h"
 #include <RTCZero.h>
 #include "helpers.h"
+#include "Adafruit_seesaw.h"
 
 #include "arduino_secrets.h"
 
@@ -38,10 +39,23 @@ unsigned int localPort = 2390;
 IPAddress remoteIp = {192, 168, 0, 23};
 RTCZero rtc;
 unsigned long epoch = 0;
+Adafruit_seesaw ss;
 
 void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
+
+    Serial.begin(115200);
+    delay(2000); // is this necessary to get a printout
+    Serial.println("seesaw Soil Sensor example!");
+    
+    if (!ss.begin(0x36)) {
+        Serial.println("ERROR! seesaw not found");
+        while(1);
+    } else {
+        Serial.print("seesaw started! version: ");
+        Serial.println(ss.getVersion(), HEX);
+    }
 
     if (WiFi.status() == WL_NO_MODULE) {
         while (true)
@@ -59,6 +73,13 @@ void setup() {
 
 void loop() {
     // make measurement
+    float tempC = ss.getTemp();
+    uint16_t capread = ss.touchRead(0);
+
+    Serial.print("Temperature: "); Serial.print(tempC); Serial.println("*C");
+    Serial.print("Capacitive: "); Serial.println(capread);
+
+    // read battery
     int adcReading = analogRead(ADC_BATTERY);
 
     status = WL_IDLE_STATUS;    // best choice?
