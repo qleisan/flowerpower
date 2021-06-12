@@ -6,17 +6,23 @@
     - shut off WiFi and go to deepSleep()
 
 improvements:
-- removed power LED to minimize power consumnption
-- add loop counter?
-- measure battery voltage (electronics needed? Must ensure no power is consumed in sleep mode)
-- add serial output when connected to USB 
-- use RTC and send timestamp with data (check if affected by deepSleep)
-- use NTP to set RTC time (at boot and at some regular intervall). Requires rtc to survive deep sleep... (if not how much does it consume?)
-- there is a "WiFi.getTime()" function!
+    power consumption:
+        - remove power LED (expected to consume 10mA out of 11mA consumed during deepSleep with wifi off and no sensor added)
+        - Adafruit sensor seems to consume 5mA during system deepSleep. Can it be turned off programatically? No "end()" method...
+            - check power consumption before and after seesaw "begin()"
+        - if necessary add hardware (transisor) to turn off Adafruit sensor
+        - investigate if battery voltage measurement (ADC) consumes power during deepSleep. If so can ADC be turned off
+        - (Crypto chip seems to be powered off by default)
+
+- add serial output when but only when connected to USB. Seems like Serial.println() doesn't block
+    experimented with Serial.availableForWrite() but not needed(?)
+- RTC is set by NTP at boot, make more robust (multiple attempts at boot) and update at regular intervalls (make measurement of drift?)
 - use compile time info (build time)
-- use unique ID (if one exist)
-- check WiFi module version
-- if connected to USB user serial communication to print info
+- use unique ID if one exist in the system e.g. crypro chip or CPU
+- check WiFi module version vs latest when connected to serial
+- check Adafruit sensor firmware when connected to serial
+- Adafruit sensor seems to draw ~5 mA, no way to shut down? Need to add transistor??
+- Current during sleep sometimes comes into a toggeling between 16 and 20mA is this the sensor?
 - transmit status information together with data
 - accumelate data that is sent in batches
 
@@ -40,6 +46,7 @@ IPAddress remoteIp = {192, 168, 0, 23};
 RTCZero rtc;
 unsigned long epoch = 0;
 Adafruit_seesaw ss;
+unsigned long int counter = 0;
 
 void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
@@ -97,7 +104,7 @@ void loop() {
     
     Udp.beginPacket(remoteIp, 19988);
     epoch = rtc.getEpoch();
-    generateJSON(epoch, adcReading, buffer);
+    generateJSON(counter, epoch, capread, adcReading, buffer);
     Udp.write(buffer);
     Udp.endPacket();
     delay(1000); // some delay seems to be needed
@@ -105,4 +112,5 @@ void loop() {
     WiFi.end();
     LowPower.deepSleep(10000);
     blinkLED(3);
+    counter++;
 }
