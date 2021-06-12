@@ -66,8 +66,10 @@ unsigned long sendNTPpacket(WiFiUDP& Udp, IPAddress& address) {
 
 unsigned long getNTP(WiFiUDP& Udp)
 {
-  for(;;) {
-      Serial.println("\nStarting connection to server...");
+  // try a limited number of times to get a response
+  for(int i=0; i<5; i++) {
+      Serial.print("\nSend NTP packet no: ");
+      Serial.println(i);
       sendNTPpacket(Udp, timeServer); // send an NTP packet to a time server
       // wait to see if a reply is available
       delay(1000);
@@ -98,4 +100,5 @@ unsigned long getNTP(WiFiUDP& Udp)
         return epoch;
       }
   }
+  return 0;
 }

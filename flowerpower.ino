@@ -45,6 +45,7 @@ unsigned int localPort = 2390;
 IPAddress remoteIp = {192, 168, 0, 23};
 RTCZero rtc;
 unsigned long epoch = 0;
+unsigned long NTP_epoch;
 Adafruit_seesaw ss;
 unsigned long int counter = 0;
 
@@ -76,6 +77,7 @@ void setup() {
 
     blinkLED(1);
     rtc.begin();
+    rtc.setEpoch(epoch);
 }
 
 void loop() {
@@ -96,9 +98,12 @@ void loop() {
         delay(5000);
     }
     Udp.begin(localPort);
-    if (epoch == 0) {
-        epoch = getNTP(Udp);
-        rtc.setEpoch(epoch);
+    // check if less than jan 1 2021, then NTP time not yet successful
+    if (epoch < 1609459200UL) {
+        NTP_epoch = getNTP(Udp);
+        if (NTP_epoch > 0) {
+            rtc.setEpoch(NTP_epoch);
+        }
     }
     blinkLED(2);
     
