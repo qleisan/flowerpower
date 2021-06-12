@@ -55,13 +55,15 @@ void setup() {
 
     Serial.begin(115200);
     delay(2000); // is this necessary to get a printout
-    Serial.println("seesaw Soil Sensor example!");
-    
+    Serial.println("Build time");
+    Serial.println(__DATE__);
+    Serial.println(__TIME__);
+
     if (!ss.begin(0x36)) {
         Serial.println("ERROR! seesaw not found");
         while(1);
     } else {
-        Serial.print("seesaw started! version: ");
+        Serial.print("seesaw started, version: ");
         Serial.println(ss.getVersion(), HEX);
     }
 
@@ -114,8 +116,10 @@ void loop() {
     Udp.endPacket();
     delay(1000); // some delay seems to be needed
 
+    // max powersave
     WiFi.end();
     LowPower.deepSleep(10000);
+
     blinkLED(3);
     counter++;
 }
