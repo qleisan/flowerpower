@@ -48,6 +48,7 @@ unsigned long epoch = 0;
 unsigned long NTP_epoch;
 Adafruit_seesaw ss;
 unsigned long int counter = 0;
+boolean sensor_attached = false;
 
 void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
@@ -60,11 +61,12 @@ void setup() {
     Serial.println(__TIME__);
 
     if (!ss.begin(0x36)) {
-        Serial.println("ERROR! seesaw not found");
-        while(1);
+        Serial.println("No sensor attached");
+        sensor_attached = false;
     } else {
         Serial.print("seesaw started, version: ");
         Serial.println(ss.getVersion(), HEX);
+        sensor_attached = true;
     }
 
     if (WiFi.status() == WL_NO_MODULE) {
@@ -84,8 +86,12 @@ void setup() {
 
 void loop() {
     // make measurement
-    float tempC = ss.getTemp();
-    uint16_t capread = ss.touchRead(0);
+    float tempC = 0.0;
+    uint16_t capread = 0;
+    if (sensor_attached) {
+        tempC = ss.getTemp();
+        capread = ss.touchRead(0);
+    }
 
     Serial.print("Temperature: "); Serial.print(tempC); Serial.println("*C");
     Serial.print("Capacitive: "); Serial.println(capread);
