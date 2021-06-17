@@ -25,14 +25,18 @@ void blinkLED(int times)
 void generateJSON(unsigned long int counter,
                   unsigned long int ep,
                   int meas,
-                  int battery,
+                  int battery1,
+                  int battery2,
+                  int battery3,
                   char * buffer)
 {
-    sprintf(buffer, "{\"counter\":%lu, \"time\":\"%lu\", \"meas\":%d, \"batt\":%d}",
+    sprintf(buffer, "{\"counter\":%lu, \"time\":\"%lu\", \"meas\":%d, \"batt1\":%d, \"batt2\":%d, \"batt3\":%d}",
             counter,
             ep,
             meas,
-            battery);
+            battery1,
+            battery2,
+            battery3);
 }
 
 

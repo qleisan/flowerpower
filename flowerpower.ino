@@ -85,20 +85,6 @@ void setup() {
 }
 
 void loop() {
-    // make measurement
-    float tempC = 0.0;
-    uint16_t capread = 0;
-    if (sensor_attached) {
-        tempC = ss.getTemp();
-        capread = ss.touchRead(0);
-    }
-
-    Serial.print("Temperature: "); Serial.print(tempC); Serial.println("*C");
-    Serial.print("Capacitive: "); Serial.println(capread);
-
-    // read battery
-    int adcReading = analogRead(ADC_BATTERY);
-
     status = WL_IDLE_STATUS;    // best choice?
     while (status != WL_CONNECTED) {
         status = WiFi.begin(ssid, pass);
@@ -117,14 +103,32 @@ void loop() {
     
     Udp.beginPacket(remoteIp, 19988);
     epoch = rtc.getEpoch();
-    generateJSON(counter, epoch, capread, adcReading, buffer);
+    // sensor readings here close to timestamp
+    // make measurement
+    float tempC = 0.0;
+    uint16_t capread = 0;
+    if (sensor_attached) {
+        tempC = ss.getTemp();
+        capread = ss.touchRead(0);
+    }
+    Serial.print("Temperature: "); Serial.print(tempC); Serial.println("*C");
+    Serial.print("Capacitive: "); Serial.println(capread);
+
+    // read battery
+    int adcReading1 = analogRead(ADC_BATTERY);
+    delay(500);
+    int adcReading2 = analogRead(ADC_BATTERY);
+    delay(500);
+    int adcReading3 = analogRead(ADC_BATTERY);
+
+    generateJSON(counter, epoch, capread, adcReading1, adcReading2, adcReading3, buffer);
     Udp.write(buffer);
     Udp.endPacket();
     delay(1000); // some delay seems to be needed
 
     // max powersave
     WiFi.end();
-    LowPower.deepSleep(10000);
+    LowPower.deepSleep(30000);
 
     blinkLED(3);
     counter++;
